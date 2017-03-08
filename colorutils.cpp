@@ -234,6 +234,8 @@ CRGB& nblend( CRGB& existing, const CRGB& overlay, fract8 amountOfOverlay )
         return existing;
     }
 
+#if 0
+    // Old blend method which unfortunately had some rounding errors
     fract8 amountOfKeep = 255 - amountOfOverlay;
 
     existing.red   = scale8_LEAVING_R1_DIRTY( existing.red,   amountOfKeep)
@@ -244,6 +246,12 @@ CRGB& nblend( CRGB& existing, const CRGB& overlay, fract8 amountOfOverlay )
                     + scale8_LEAVING_R1_DIRTY( overlay.blue,   amountOfOverlay);
 
     cleanup_R1();
+#else
+    // Corrected blend method, with no loss-of-precision rounding errors
+    existing.red   = blend8( existing.red,   overlay.red,   amountOfOverlay);
+    existing.green = blend8( existing.green, overlay.green, amountOfOverlay);
+    existing.blue  = blend8( existing.blue,  overlay.blue,  amountOfOverlay);
+#endif
 
     return existing;
 }
@@ -355,12 +363,12 @@ CHSV* blend( const CHSV* src1, const CHSV* src2, CHSV* dest, uint16_t count, fra
 
 // Forward declaration of the function "XY" which must be provided by
 // the application for use in two-dimensional filter functions.
-
-#ifdef FASTLED_UNIX
+#if defined(FASTLED_UNIX)
 uint16_t XY( uint8_t, uint8_t) __attribute__ ((weak));
 #else
 uint16_t XY( uint8_t, uint8_t);// __attribute__ ((weak));
 #endif
+
 
 // blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
 // blur2d: two-dimensional blur filter. Spreads light to 8 XY neighbors.
@@ -448,7 +456,7 @@ CRGB HeatColor( uint8_t temperature)
     // Scale 'heat' down from 0-255 to 0-191,
     // which can then be easily divided into three
     // equal 'thirds' of 64 units each.
-    uint8_t t192 = scale8_video( temperature, 192);
+    uint8_t t192 = scale8_video( temperature, 191);
 
     // calculate a value that ramps up from
     // zero to 255 in each 'third' of the scale.
